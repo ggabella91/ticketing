@@ -1,16 +1,20 @@
 import { Message } from 'node-nats-streaming';
-import { Listener, OrderCreatedEvent, Subjects } from '@ggabellatickets/common';
+import {
+  Listener,
+  OrderCancelledEvent,
+  Subjects,
+} from '@ggabellatickets/common';
 import { queueGroupName } from './queue-group-name';
 import { Ticket } from '../../models/ticket';
 import { TicketUpdatedPublisher } from '../publishers/ticket-updated-publisher';
 
-export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
-  readonly subject = Subjects.OrderCreated;
+export class OrderCancelledListener extends Listener<OrderCancelledEvent> {
+  readonly subject = Subjects.OrderCancelled;
 
   queueGroupName = queueGroupName;
 
-  async onMessage(data: OrderCreatedEvent['data'], msg: Message) {
-    // Find the ticket that the order is reserving
+  async onMessage(data: OrderCancelledEvent['data'], msg: Message) {
+    // Find the ticket that the order is cancelling
     const ticket = await Ticket.findById(data.ticket.id);
 
     // If no ticket, throw error
@@ -18,8 +22,8 @@ export class OrderCreatedListener extends Listener<OrderCreatedEvent> {
       throw new Error('Ticket not found');
     }
 
-    // Mark the ticket as being reserved by setting its orderId property
-    ticket.set({ orderId: data.id });
+    // Mark the ticket as being cancelled by setting its orderId property to undefined
+    ticket.set({ orderId: undefined });
 
     // Save the ticket
     await ticket.save();
